@@ -13,6 +13,7 @@ module.exports = (sequelize) => {
         price3: { type: DataTypes.FLOAT, allowNull: false },
         price4: { type: DataTypes.FLOAT, allowNull: false },
         operatorId: { type: DataTypes.INTEGER, allowNull: false },
+        tollid: { type: DataTypes.STRING, allowNull: true },
     }, {
         tableName: 'tollstation',
         timestamps: false,
