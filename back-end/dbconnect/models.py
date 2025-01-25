@@ -25,7 +25,7 @@ class Pass(models.Model):
     id = models.AutoField(primary_key=True)
     timestamp = models.CharField(max_length=200, blank=True, null=True)
     charge = models.FloatField(blank=True, null=True)
-    tag = models.ForeignKey('Tag', models.DO_NOTHING, blank=True, null=True)
+    tag = models.ForeignKey('Tag', models.CASCADE, blank=True, null=True)
     tollstation = models.ForeignKey('Tollstation', models.DO_NOTHING, db_column='tollStation_id', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:

@@ -121,3 +121,104 @@ class ResetPassesView(APIView):
         except Exception as e:
             return JsonResponse({"status": "failed", "message": str(e)}, status=500)
         
+
+
+@authentication_classes([])
+@permission_classes([AllowAny])
+class AddPassesView(APIView):
+    def post(self, request):
+        file_path = 'dbconnect/data/passes-sample.csv'  # Διαδρομή προς το CSV αρχείο
+        
+        # Έλεγχος αν το αρχείο υπάρχει
+        try:
+            with open(file_path, 'r', encoding='utf-8-sig') as file:
+                reader = csv.DictReader(file)  # Διάβασμα του CSV αρχείου
+                rows = list(reader)
+        except FileNotFoundError:
+            return JsonResponse({
+                "status": "failed",
+                "info": "File not found"
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                "status": "failed",
+                "info": f"Error opening file: {str(e)}"
+            }, status=400)
+        
+        errors = []
+        success_count = 0
+        
+        try:
+            with transaction.atomic():
+                for row_num, row in enumerate(rows, start=1):
+                    try:
+                        # Έλεγχος αν όλα τα απαραίτητα πεδία υπάρχουν στη γραμμή
+                        print("CSV Headers:", reader.fieldnames)
+                        if not all(key in row for key in ['tagHomeID', 'tagRef', 'tollID', 'timestamp', 'charge']):
+                            errors.append(f"Row {row_num}: Missing required fields.")
+                            continue
+
+                        # Εξαγωγή πεδίων από το CSV
+                        tag_home_id = row['tagHomeID']
+                        tag_ref = row['tagRef']
+                        toll_id = row['tollID']
+                        timestamp = row['timestamp']
+                        charge = float(row['charge'])  # Μετατροπή σε float
+
+                        # Προσδιορισμός κωδικού operator από το tagHomeID
+                        if tag_home_id.startswith("NA"):
+                            operator_code = "NAO"
+                        else:
+                            operator_code = tag_home_id[:2]
+
+                        # Εύρεση του Operator
+                        try:
+                            operator = Operator.objects.get(code=operator_code)
+                        except Operator.DoesNotExist:
+                            errors.append(f"Row {row_num}: Operator με κωδικό '{operator_code}' δεν βρέθηκε.")
+                            continue
+
+                        # Δημιουργία/Εύρεση Tag (ελέγχουμε αν υπάρχει ήδη)
+                        tag, created = Tag.objects.get_or_create(
+                            tagref=tag_ref,
+                            operator=operator
+                        )
+
+                        # Εύρεση του Tollstation με βάση το tollID
+                        try:
+                            tollstation = Tollstation.objects.get(tollid=toll_id)
+                        except Tollstation.DoesNotExist:
+                            errors.append(f"Row {row_num}: Tollstation με tollID '{toll_id}' δεν βρέθηκε.")
+                            continue
+
+                        # Δημιουργία Pass
+                        Pass.objects.create(
+                            timestamp=timestamp,
+                            charge=charge,
+                            tag=tag,
+                            tollstation=tollstation
+                        )
+                        success_count += 1
+
+                    except ValueError as e:
+                        errors.append(f"Row {row_num}: Invalid charge value. {str(e)}")
+                    except Exception as e:
+                        errors.append(f"Row {row_num}: {str(e)}")
+
+                if errors:
+                    return JsonResponse({
+                        "status": "partial",
+                        "message": f"Επιτυχία: {success_count}, Σφάλματα: {len(errors)}",
+                        "errors": errors
+                    }, status=207)
+                else:
+                    return JsonResponse({
+                        "status": "success",
+                        "message": f"Προστέθηκαν {success_count} εγγραφές."
+                    }, status=200)
+
+        except Exception as e:
+            return JsonResponse({
+                "status": "failed",
+                "info": f"Transaction failed: {str(e)}"
+            }, status=500)
