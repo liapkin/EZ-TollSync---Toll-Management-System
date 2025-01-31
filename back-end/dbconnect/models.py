@@ -23,10 +23,10 @@ class Operator(models.Model):
 
 class Pass(models.Model):
     id = models.AutoField(primary_key=True)
-    timestamp = models.CharField(max_length=200, blank=True, null=True)
+    timestamp = models.DateTimeField(blank=True, null=True)
     charge = models.FloatField(blank=True, null=True)
     tag = models.ForeignKey('Tag', models.CASCADE, blank=True, null=True)
-    tollstation = models.ForeignKey('Tollstation', models.DO_NOTHING, db_column='tollStation_id', blank=True, null=True)  # Field name made lowercase.
+    tollstation = models.ForeignKey('Tollstation', models.DO_NOTHING, db_column='tollStation_id', blank=True, null=True) 
 
     class Meta:
         db_table = 'pass'
@@ -34,8 +34,7 @@ class Pass(models.Model):
 
 class Tag(models.Model):
     id = models.AutoField(primary_key=True)
-    tagref = models.CharField(db_column='tagRef', max_length=200, blank=True, null=True)  # Field name made lowercase.
-    # Ίσως καλύτερο να μετονομαστεί σε operator_id, για να ταιριάζει με τη βάση.
+    tagref = models.CharField(db_column='tagRef', max_length=200, blank=True, null=True)
     operator = models.ForeignKey(Operator, models.DO_NOTHING, blank=True, null=True) 
 
     class Meta:
