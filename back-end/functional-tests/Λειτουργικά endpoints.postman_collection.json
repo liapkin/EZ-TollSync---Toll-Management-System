@@ -1,0 +1,165 @@
+{
+	"info": {
+		"_postman_id": "773871c3-82ea-46ad-943c-75bb3d2d4a61",
+		"name": "Λειτουργικά endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40242224",
+		"_collection_link": "https://planetary-crater-410009.postman.co/workspace/%25CE%25A0%25CE%25BF%25CE%25BB%25CF%2585-%25CE%25B5%25CF%2581%25CE%25B3%25CE%25B1%25CF%2583%25CF%2584%25CE%25AE%25CF%2581%25CE%25B9%25CE%25BF~382b67b1-55da-4370-80de-9fc73bc46569/collection/40242224-773871c3-82ea-46ad-943c-75bb3d2d4a61?action=share&source=collection_link&creator=40242224"
+	},
+	"item": [
+		{
+			"name": "TollStationPasses",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/tollStationPasses/:tollStationID/:date_from/:date_to",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tollStationPasses",
+						":tollStationID",
+						":date_from",
+						":date_to"
+					],
+					"variable": [
+						{
+							"key": "tollStationID",
+							"value": "AM01"
+						},
+						{
+							"key": "date_from",
+							"value": "2022-01-01 00:23"
+						},
+						{
+							"key": "date_to",
+							"value": "2022-01-14 23:59"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PassAnalysis",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/passAnalysis/:stationOpID/:tagOpID/:date_from/:date_to",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"passAnalysis",
+						":stationOpID",
+						":tagOpID",
+						":date_from",
+						":date_to"
+					],
+					"variable": [
+						{
+							"key": "stationOpID",
+							"value": "KO"
+						},
+						{
+							"key": "tagOpID",
+							"value": "KO"
+						},
+						{
+							"key": "date_from",
+							"value": "2022-01-01 00:23"
+						},
+						{
+							"key": "date_to",
+							"value": "2022-01-14 23:59"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PassesCost",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/passesCost/:tollOpID/:tagOpID/:date_from/:date_to",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"passesCost",
+						":tollOpID",
+						":tagOpID",
+						":date_from",
+						":date_to"
+					],
+					"variable": [
+						{
+							"key": "tollOpID",
+							"value": "KO"
+						},
+						{
+							"key": "tagOpID",
+							"value": "MO"
+						},
+						{
+							"key": "date_from",
+							"value": "2022-01-01 00:23"
+						},
+						{
+							"key": "date_to",
+							"value": "2022-01-14 23:59"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ChargesBy",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/chargesBy/:tollOpID/:date_from/:date_to",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"chargesBy",
+						":tollOpID",
+						":date_from",
+						":date_to"
+					],
+					"variable": [
+						{
+							"key": "tollOpID",
+							"value": "AM"
+						},
+						{
+							"key": "date_from",
+							"value": "2022-01-01 00:23"
+						},
+						{
+							"key": "date_to",
+							"value": "2022-01-14 23:59"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

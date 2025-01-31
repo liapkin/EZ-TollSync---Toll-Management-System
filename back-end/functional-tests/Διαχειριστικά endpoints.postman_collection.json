@@ -1,0 +1,100 @@
+{
+	"info": {
+		"_postman_id": "97b89633-c4aa-451a-a61c-b5fdb093717a",
+		"name": "Διαχειριστικά endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40242224",
+		"_collection_link": "https://planetary-crater-410009.postman.co/workspace/%25CE%25A0%25CE%25BF%25CE%25BB%25CF%2585-%25CE%25B5%25CF%2581%25CE%25B3%25CE%25B1%25CF%2583%25CF%2584%25CE%25AE%25CF%2581%25CE%25B9%25CE%25BF~382b67b1-55da-4370-80de-9fc73bc46569/collection/38953863-97b89633-c4aa-451a-a61c-b5fdb093717a?action=share&source=collection_link&creator=40242224"
+	},
+	"item": [
+		{
+			"name": "HealthCheck",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/admin/healthcheck",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"healthcheck"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ResetStations",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/admin/resetstations/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"resetstations",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ResetPasses",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/admin/resetpasses/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"resetpasses",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddPasses",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/admin/addpasses/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"addpasses",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
