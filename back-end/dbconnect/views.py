@@ -1,6 +1,8 @@
 import csv
+from datetime import datetime
 from django.http import JsonResponse
 from django.db import connection,transaction
+from django.utils import timezone
 from rest_framework.views import APIView
 from .models import Operator, Tollstation, Tag, Pass  
 from rest_framework.decorators import authentication_classes, permission_classes
@@ -115,11 +117,11 @@ class ResetPassesView(APIView):
                 # Διαγραφή όλων των passes
                 Pass.objects.all().delete()
                 
-                return JsonResponse({"status": "success", "message": "All passes and dependent data have been reset."})
+                return JsonResponse({"status": "success", "info": "All passes and dependent data have been reset."})
         except Exception as e:
-            return JsonResponse({"status": "failed", "message": f"ProtectedError: {str(e)}"}, status=400)
+            return JsonResponse({"status": "failed", "info": f"ProtectedError: {str(e)}"}, status=400)
         except Exception as e:
-            return JsonResponse({"status": "failed", "message": str(e)}, status=500)
+            return JsonResponse({"status": "failed", "info": str(e)}, status=500)
         
 
 
@@ -162,7 +164,7 @@ class AddPassesView(APIView):
                         tag_home_id = row['tagHomeID']
                         tag_ref = row['tagRef']
                         toll_id = row['tollID']
-                        timestamp = row['timestamp']
+                        timestamp_str = row['timestamp']
                         charge = float(row['charge'])  # Μετατροπή σε float
 
                         # Προσδιορισμός κωδικού operator από το tagHomeID
@@ -190,6 +192,9 @@ class AddPassesView(APIView):
                         except Tollstation.DoesNotExist:
                             errors.append(f"Row {row_num}: Tollstation με tollID '{toll_id}' δεν βρέθηκε.")
                             continue
+
+                        # Μετατροπή timestamp σε datetime
+                        timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M")
 
                         # Δημιουργία Pass
                         Pass.objects.create(
@@ -222,3 +227,158 @@ class AddPassesView(APIView):
                 "status": "failed",
                 "info": f"Transaction failed: {str(e)}"
             }, status=500)
+
+
+# Λειτουργικά endpoints
+@authentication_classes([])
+@permission_classes([AllowAny])
+class TollStationPassesView(APIView):
+    def get(self, request, tollStationID, date_from, date_to):
+        try:
+            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
+            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+
+            passes = Pass.objects.filter(
+                timestamp__range=[date_from, date_to]
+            ).select_related(
+                'tollstation', 'tag__operator'
+            ).filter(
+                tollstation__tollid = tollStationID,)
+
+            pass_list = []
+            for index, p in enumerate(passes, start=1):
+                pass_list.append({
+                    "passIndex": index,
+                    "passID": p.id,
+                    "timestamp": p.timestamp,
+                    "tagID": p.tag.tagref,
+                    "tagProvider": p.tag.operator.name,
+                    "passType": "home" if p.tag.operator.id == p.tollstation.operator.id else "visitor",
+                    "passCharge": p.charge
+                })
+
+            response_data = {
+                "stationID": tollStationID,
+                "stationOperator": passes.first().tollstation.operator.name if passes else "",
+                "requestTimestamp": timezone.now(),
+                "periodFrom": date_from,
+                "periodTo": date_to,
+                "nPasses": len(passes),
+                "passList": pass_list
+            }
+
+            return JsonResponse(response_data, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "failed", "info": str(e)}, status=500)
+        
+        
+@authentication_classes([])
+@permission_classes([AllowAny])
+class PassAnalysisView(APIView):
+    def get(self, request, stationOpID, tagOpID, date_from, date_to):
+        try:
+            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
+            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+
+            passes = Pass.objects.filter(
+                tollstation__operator__code=stationOpID,
+                tag__operator__code=tagOpID,
+                timestamp__range=[date_from, date_to]
+            )
+
+            pass_list = []
+            for index, p in enumerate(passes, start=1):
+                pass_list.append({
+                    "passIndex": index,
+                    "passID": p.id,
+                    "stationID": p.tollstation.tollid,
+                    "timestamp": p.timestamp,
+                    "tagID": p.tag.tagref,
+                    "passCharge": p.charge
+                })
+
+            response_data = {
+                "stationOpID": stationOpID,
+                "tagOpID": tagOpID,
+                "requestTimestamp": timezone.now(),
+                "periodFrom": date_from,
+                "periodTo": date_to,
+                "nPasses": len(passes),
+                "passList": pass_list
+            }
+
+            return JsonResponse(response_data, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "failed", "info": str(e)}, status=500)
+        
+
+@authentication_classes([])
+@permission_classes([AllowAny])
+class PassesCostView(APIView):
+    def get(self, request, tollOpID, tagOpID, date_from, date_to):
+        try:
+            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
+            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+
+            passes = Pass.objects.filter(
+                tollstation__operator__code=tollOpID,
+                tag__operator__code=tagOpID,
+                timestamp__range=[date_from, date_to]
+            )
+
+            total_cost = sum(p.charge for p in passes)
+
+            response_data = {
+                "tollOpID": tollOpID,
+                "tagOpID": tagOpID,
+                "requestTimestamp": timezone.now(),
+                "periodFrom": date_from,
+                "periodTo": date_to,
+                "nPasses": len(passes),
+                "passesCost": total_cost
+            }
+
+            return JsonResponse(response_data, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "failed", "info": str(e)}, status=500)
+
+@authentication_classes([])
+@permission_classes([AllowAny])
+class ChargesByView(APIView):
+    def get(self, request, tollOpID, date_from, date_to):
+        try:
+            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
+            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+            
+            operators = Operator.objects.exclude(code=tollOpID)
+            vOpList = []
+
+            for operator in operators:
+                passes = Pass.objects.filter(
+                    tollstation__operator__code=tollOpID,
+                    tag__operator=operator,
+                    timestamp__range=[date_from, date_to]
+                )
+
+                total_cost = sum(p.charge for p in passes)
+                vOpList.append({
+                    "visitingOpID": operator.code,
+                    "nPasses": len(passes),
+                    "passesCost": total_cost
+                })
+
+            response_data = {
+                "tollOpID": tollOpID,
+                "requestTimestamp": timezone.now(),
+                "periodFrom": date_from,
+                "periodTo": date_to,
+                "vOpList": vOpList
+            }
+
+            return JsonResponse(response_data, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "failed", "info": str(e)}, status=500)
