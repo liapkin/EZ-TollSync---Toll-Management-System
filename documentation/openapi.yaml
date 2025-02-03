@@ -1,0 +1,517 @@
+openapi: 3.0.3
+info:
+  title: Toll Management REST API
+  version: "1.0.0"
+  description: |
+    REST API για τη διαχείριση διαλειτουργικότητας διοδίων στους αυτοκινητόδρομους.
+    Περιέχει endpoints για login/logout, διαχείριση διαδοχών διέλευσης, αναλύσεις και διαχειριστικές λειτουργίες.
+servers:
+  - url: https://{host}:9115/api
+    description: Base URL του API
+    variables:
+      host:
+        default: localhost
+paths:
+  /login:
+    post:
+      summary: Είσοδος χρήστη (login)
+      description: Επαληθεύει τα διαπιστευτήρια χρήστη και επιστρέφει token σε περίπτωση επιτυχίας.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Επιτυχής διαπίστευση χρήστη. Επιστρέφει το token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή διαπιστευτήρια.
+        '401':
+          description: Not Authorized – Μη διαπιστευμένος χρήστης.
+        '500':
+          description: Internal Server Error
+          
+  /logout:
+    post:
+      summary: Έξοδος χρήστη (logout)
+      description: Λειτουργία logout, όπου το token παρέχεται στον custom HTTP header X-OBSERVATORY-AUTH.
+      parameters:
+        - name: X-OBSERVATORY-AUTH
+          in: header
+          description: User access token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Επιτυχής έξοδος (logout) χρήστη. Κενό σώμα απάντησης.
+        '401':
+          description: Not Authorized – Μη διαπιστευμένος χρήστης.
+        '500':
+          description: Internal Server Error
+
+  /admin/healthcheck:
+    get:
+      summary: Έλεγχος συνδεσιμότητας συστήματος (healthcheck)
+      description: Ελέγχει την σύνδεση με τη ΒΔ και επιστρέφει πληροφορίες σχετικά με το σύστημα.
+      responses:
+        '200':
+          description: Επιτυχής σύνδεση με τη ΒΔ.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  dbconnection:
+                    type: string
+                  n_stations:
+                    type: integer
+                  n_tags:
+                    type: integer
+                  n_passes:
+                    type: integer
+        '401':
+          description: Αποτυχία σύνδεσης με τη ΒΔ.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: failed
+                  dbconnection:
+                    type: string
+        '500':
+          description: Internal Server Error
+
+  /admin/resetstations:
+    post:
+      summary: Αρχικοποίηση των σταθμών διοδίων
+      description: Επαναφέρει τον πίνακα σταθμών διοδίων χρησιμοποιώντας το αρχείο tollstations2024.csv.
+      responses:
+        '200':
+          description: Επιτυχής αρχικοποίηση.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή δεδομένα.
+        '500':
+          description: Internal Server Error
+
+  /admin/resetpasses:
+    post:
+      summary: Αρχικοποίηση των διελεύσεων
+      description: Διαγραφή όλων των γεγονότων διέλευσης και επαναφορά των σχετικών πινάκων.
+      responses:
+        '200':
+          description: Επιτυχής επαναφορά.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή δεδομένα.
+        '500':
+          description: Internal Server Error
+
+  /admin/addpasses:
+    post:
+      summary: Εισαγωγή νέων διελεύσεων
+      description: Ενημερώνει τα γεγονότα διέλευσης προσθέτοντας δεδομένα από αρχείο CSV που αποστέλλεται ως multipart/form-data.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Το CSV αρχείο με τις διελεύσεις (mime type text/csv)
+      responses:
+        '200':
+          description: Επιτυχής εισαγωγή δεδομένων.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή δεδομένα.
+        '500':
+          description: Internal Server Error
+
+  /tollStationPasses/{tollStationID}/{date_from}/{date_to}:
+    get:
+      summary: Λήψη διελεύσεων για σταθμό διοδίων
+      description: Επιστρέφει την ανάλυση των διελεύσεων για τον συγκεκριμένο σταθμό και για την καθορισμένη περίοδο.
+      parameters:
+        - name: tollStationID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Το μοναδικό ID του σταθμού διοδίων
+        - name: date_from
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία έναρξης (μορφή YYYYMMDD)
+        - name: date_to
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία λήξης (μορφή YYYYMMDD)
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Ο μορφότυπος δεδομένων εξόδου (json ή csv)
+      responses:
+        '200':
+          description: Επιτυχής ανάκτηση δεδομένων.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stationID:
+                    type: string
+                  stationOperator:
+                    type: string
+                  requestTimestamp:
+                    type: string
+                    example: "2024-11-15 12:34"
+                  periodFrom:
+                    type: string
+                  periodTo:
+                    type: string
+                  nPasses:
+                    type: integer
+                  passList:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        passIndex:
+                          type: integer
+                        passID:
+                          type: string
+                        timestamp:
+                          type: string
+                          example: "2024-11-15 12:34"
+                        tagID:
+                          type: string
+                        tagProvider:
+                          type: string
+                        passType:
+                          type: string
+                          enum: [home, visitor]
+                        passCharge:
+                          type: number
+                          format: float
+            text/csv:
+              schema:
+                type: string
+                description: CSV formatted output
+        '204':
+          description: Επιτυχής κλήση αλλά χωρίς δεδομένα.
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή δεδομένα.
+        '500':
+          description: Internal Server Error
+
+  /passAnalysis/{stationOpID}/{tagOpID}/{date_from}/{date_to}:
+    get:
+      summary: Ανάλυση διελεύσεων μεταξύ λειτουργών
+      description: Επιστρέφει την ανάλυση των διελεύσεων που πραγματοποιήθηκαν με tag του tagOpID σε σταθμούς του stationOpID.
+      parameters:
+        - name: stationOpID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Το ID του λειτουργού του σταθμού
+        - name: tagOpID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Το ID του λειτουργού-παρόχου του tag
+        - name: date_from
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία έναρξης (YYYYMMDD)
+        - name: date_to
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία λήξης (YYYYMMDD)
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Ο μορφότυπος εξόδου
+      responses:
+        '200':
+          description: Επιτυχής ανάκτηση δεδομένων.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stationOpID:
+                    type: string
+                  tagOpID:
+                    type: string
+                  requestTimestamp:
+                    type: string
+                    example: "2024-11-15 12:34"
+                  periodFrom:
+                    type: string
+                  periodTo:
+                    type: string
+                  nPasses:
+                    type: integer
+                  passList:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        passIndex:
+                          type: integer
+                        passID:
+                          type: string
+                        stationID:
+                          type: string
+                        timestamp:
+                          type: string
+                          example: "2024-11-15 12:34"
+                        tagID:
+                          type: string
+                        passCharge:
+                          type: number
+                          format: float
+            text/csv:
+              schema:
+                type: string
+                description: CSV formatted output
+        '204':
+          description: Επιτυχής κλήση αλλά χωρίς δεδομένα.
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή δεδομένα.
+        '500':
+          description: Internal Server Error
+
+  /passesCost/{tollOpID}/{tagOpID}/{date_from}/{date_to}:
+    get:
+      summary: Κόστος διελεύσεων μεταξύ λειτουργών
+      description: Επιστρέφει τον αριθμό διελεύσεων και το συνολικό κόστος που οφείλει ο tagOpID στον tollOpID.
+      parameters:
+        - name: tollOpID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Το ID του λειτουργού του σταθμού διέλευσης
+        - name: tagOpID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Το ID του λειτουργού του tag
+        - name: date_from
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία έναρξης (YYYYMMDD)
+        - name: date_to
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία λήξης (YYYYMMDD)
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Ο μορφότυπος εξόδου
+      responses:
+        '200':
+          description: Επιτυχής ανάκτηση δεδομένων.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tollOpID:
+                    type: string
+                  tagOpID:
+                    type: string
+                  requestTimestamp:
+                    type: string
+                    example: "2024-11-15 12:34"
+                  periodFrom:
+                    type: string
+                  periodTo:
+                    type: string
+                  nPasses:
+                    type: integer
+                  passesCost:
+                    type: number
+                    format: float
+            text/csv:
+              schema:
+                type: string
+                description: CSV formatted output
+        '204':
+          description: Επιτυχής κλήση αλλά χωρίς δεδομένα.
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή δεδομένα.
+        '500':
+          description: Internal Server Error
+
+  /chargesBy/{tollOpID}/{date_from}/{date_to}:
+    get:
+      summary: Διελεύσεις και χρεώσεις λοιπών λειτουργών
+      description: Επιστρέφει λίστα με τα γεγονότα διέλευσης από οχήματα άλλων operators και το συνολικό κόστος που οφείλουν στον tollOpID.
+      parameters:
+        - name: tollOpID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Το ID του operator του σταθμού διέλευσης
+        - name: date_from
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία έναρξης (YYYYMMDD)
+        - name: date_to
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+          description: Η ημερομηνία λήξης (YYYYMMDD)
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Ο μορφότυπος εξόδου
+      responses:
+        '200':
+          description: Επιτυχής ανάκτηση δεδομένων.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tollOpID:
+                    type: string
+                  requestTimestamp:
+                    type: string
+                    example: "2024-11-15 12:34"
+                  periodFrom:
+                    type: string
+                  periodTo:
+                    type: string
+                  vOpList:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        visitingOpID:
+                          type: string
+                        nPasses:
+                          type: integer
+                        passesCost:
+                          type: number
+                          format: float
+            text/csv:
+              schema:
+                type: string
+                description: CSV formatted output
+        '204':
+          description: Επιτυχής κλήση αλλά χωρίς δεδομένα.
+        '400':
+          description: Bad Request – Λανθασμένα ή ελλιπή δεδομένα.
+        '500':
+          description: Internal Server Error
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [OK, failed]
+        info:
+          type: string
+          nullable: true
