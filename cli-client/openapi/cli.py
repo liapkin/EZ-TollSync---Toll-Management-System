@@ -105,7 +105,7 @@ def main():
     args = parser.parse_args()
 
     # Create the API client configuration.
-    configuration = openapi_client.Configuration(host="https://localhost:9115/api")
+    configuration = openapi_client.Configuration(host="http://localhost:8000")
     with openapi_client.ApiClient(configuration) as api_client:
         api_instance = openapi_client.DefaultApi(api_client)
         try:

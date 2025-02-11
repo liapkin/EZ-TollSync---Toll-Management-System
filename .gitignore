@@ -38,3 +38,5 @@ build/
 
 # Ignore all files except .py files
 !*.py
+back-end/api/tolll/localhost-key.pem
+back-end/api/tolll/localhost.pem
