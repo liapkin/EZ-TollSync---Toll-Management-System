@@ -235,8 +235,9 @@ class AddPassesView(APIView):
 class TollStationPassesView(APIView):
     def get(self, request, tollStationID, date_from, date_to):
         try:
-            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
-            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+            date_from = datetime.strptime(date_from, "%Y%m%d")
+            date_to = datetime.strptime(date_to, "%Y%m%d")
+
 
             passes = Pass.objects.filter(
                 timestamp__range=[date_from, date_to]
@@ -278,8 +279,8 @@ class TollStationPassesView(APIView):
 class PassAnalysisView(APIView):
     def get(self, request, stationOpID, tagOpID, date_from, date_to):
         try:
-            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
-            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+            date_from = datetime.strptime(date_from, "%Y%m%d")
+            date_to = datetime.strptime(date_to, "%Y%m%d")
 
             passes = Pass.objects.filter(
                 tollstation__operator__code=stationOpID,
@@ -319,8 +320,8 @@ class PassAnalysisView(APIView):
 class PassesCostView(APIView):
     def get(self, request, tollOpID, tagOpID, date_from, date_to):
         try:
-            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
-            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+            date_from = datetime.strptime(date_from, "%Y%m%d")
+            date_to = datetime.strptime(date_to, "%Y%m%d")
 
             passes = Pass.objects.filter(
                 tollstation__operator__code=tollOpID,
@@ -350,8 +351,8 @@ class PassesCostView(APIView):
 class ChargesByView(APIView):
     def get(self, request, tollOpID, date_from, date_to):
         try:
-            date_from = datetime.strptime(date_from, "%Y-%m-%d %H:%M")
-            date_to = datetime.strptime(date_to, "%Y-%m-%d %H:%M")
+            date_from = datetime.strptime(date_from, "%Y%m%d")
+            date_to = datetime.strptime(date_to, "%Y%m%d")
             
             operators = Operator.objects.exclude(code=tollOpID)
             vOpList = []
