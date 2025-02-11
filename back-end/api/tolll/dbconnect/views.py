@@ -273,7 +273,7 @@ class PassAnalysisView(APIView):
             for index, p in enumerate(passes, start=1):
                 pass_list.append({
                     "passIndex": index,
-                    "passID": p.id,
+                    "passID": str(p.id),
                     "stationID": p.tollstation.tollid,
                     "timestamp": p.timestamp,
                     "tagID": p.tag.tagref,

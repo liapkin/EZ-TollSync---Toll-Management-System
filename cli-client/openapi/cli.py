@@ -68,7 +68,7 @@ def main():
     tsp_parser.add_argument("--station", required=True, help="Toll station ID")
     tsp_parser.add_argument("--from", dest="date_from", required=True, help="Start date (YYYYMMDD)")
     tsp_parser.add_argument("--to", dest="date_to", required=True, help="End date (YYYYMMDD)")
-    tsp_parser.add_argument("--format", default="csv", help="Output format (csv or json)")
+    tsp_parser.add_argument("--format", default="json", help="Output format (csv or json)")
 
     # passanalysis
     pa_parser = subparsers.add_parser("passanalysis", help="Analyze passes between operators (calls /passAnalysis)")
@@ -105,7 +105,7 @@ def main():
     args = parser.parse_args()
 
     # Create the API client configuration.
-    configuration = openapi_client.Configuration(host="http://localhost:8000")
+    configuration = openapi_client.Configuration(host="https://localhost:9115/api")
     with openapi_client.ApiClient(configuration) as api_client:
         api_instance = openapi_client.DefaultApi(api_client)
         try:
