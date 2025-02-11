@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from .views import (
     TollStationPassesView, 
     PassAnalysisView, 
@@ -7,8 +7,8 @@ from .views import (
 )
 
 urlpatterns = [
-    path('tollStationPasses/<str:tollStationID>/<str:date_from>/<str:date_to>/', TollStationPassesView.as_view(), name='tollStationPasses'),
-    path('passAnalysis/<str:stationOpID>/<str:tagOpID>/<str:date_from>/<str:date_to>/', PassAnalysisView.as_view(), name='passAnalysis'),
-    path('passesCost/<str:tollOpID>/<str:tagOpID>/<str:date_from>/<str:date_to>/', PassesCostView.as_view(), name='passesCost'),
-    path('chargesBy/<str:tollOpID>/<str:date_from>/<str:date_to>/', ChargesByView.as_view(), name='chargesBy'),
+    re_path(r'^tollStationPasses/(?P<tollStationID>\w+)/(?P<date_from>\d{8})(?:/(?P<date_to>\d{8}))?/$', TollStationPassesView.as_view(), name='tollStationPasses'),
+    re_path(r'^passAnalysis/(?P<stationOpID>\w+)/(?P<tagOpID>\w+)/(?P<date_from>\d{8})(?:/(?P<date_to>\d{8}))?/$', PassAnalysisView.as_view(), name='passAnalysis'),
+    re_path(r'^passesCost/(?P<tollOpID>\w+)/(?P<tagOpID>\w+)/(?P<date_from>\d{8})(?:/(?P<date_to>\d{8}))?/$', PassesCostView.as_view(), name='passesCost'),
+    re_path(r'^chargesBy/(?P<tollOpID>\w+)/(?P<date_from>\d{8})(?:/(?P<date_to>\d{8}))?/$', ChargesByView.as_view(), name='chargesBy'),
 ]

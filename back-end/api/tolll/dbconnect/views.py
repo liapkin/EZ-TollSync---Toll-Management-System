@@ -229,22 +229,29 @@ class AddPassesView(APIView):
             }, status=500)
 
 
-# Λειτουργικά endpoints
+
 @authentication_classes([])
 @permission_classes([AllowAny])
 class TollStationPassesView(APIView):
-    def get(self, request, tollStationID, date_from, date_to):
+    def get(self, request, tollStationID=None, date_from=None, date_to=None):
+        # Έλεγχος αν λείπει κάποια παράμετρος
+        if not tollStationID or not date_from or not date_to:
+            return JsonResponse({
+                "status": "failed",
+                "info": "Missing required path parameters."
+            }, status=400)
+
         try:
             date_from = datetime.strptime(date_from, "%Y%m%d")
             date_to = datetime.strptime(date_to, "%Y%m%d")
-
 
             passes = Pass.objects.filter(
                 timestamp__range=[date_from, date_to]
             ).select_related(
                 'tollstation', 'tag__operator'
             ).filter(
-                tollstation__tollid = tollStationID,)
+                tollstation__tollid=tollStationID
+            )
 
             pass_list = []
             for index, p in enumerate(passes, start=1):
@@ -272,12 +279,18 @@ class TollStationPassesView(APIView):
 
         except Exception as e:
             return JsonResponse({"status": "failed", "info": str(e)}, status=500)
-        
-        
+
+
 @authentication_classes([])
 @permission_classes([AllowAny])
 class PassAnalysisView(APIView):
-    def get(self, request, stationOpID, tagOpID, date_from, date_to):
+    def get(self, request, stationOpID=None, tagOpID=None, date_from=None, date_to=None):
+        # Έλεγχος αν λείπει κάποια παράμετρος
+        if not stationOpID or not tagOpID or not date_from or not date_to:
+            return JsonResponse({
+                "status": "failed",
+                "info": "Missing required path parameters."
+            }, status=400)
         try:
             date_from = datetime.strptime(date_from, "%Y%m%d")
             date_to = datetime.strptime(date_to, "%Y%m%d")
@@ -313,12 +326,18 @@ class PassAnalysisView(APIView):
 
         except Exception as e:
             return JsonResponse({"status": "failed", "info": str(e)}, status=500)
-        
+
 
 @authentication_classes([])
 @permission_classes([AllowAny])
 class PassesCostView(APIView):
-    def get(self, request, tollOpID, tagOpID, date_from, date_to):
+    def get(self, request, tollOpID=None, tagOpID=None, date_from=None, date_to=None):
+        # Έλεγχος αν λείπει κάποια παράμετρος
+        if not tollOpID or not tagOpID or not date_from or not date_to:
+            return JsonResponse({
+                "status": "failed",
+                "info": "Missing required path parameters."
+            }, status=400)
         try:
             date_from = datetime.strptime(date_from, "%Y%m%d")
             date_to = datetime.strptime(date_to, "%Y%m%d")
@@ -346,10 +365,17 @@ class PassesCostView(APIView):
         except Exception as e:
             return JsonResponse({"status": "failed", "info": str(e)}, status=500)
 
+
 @authentication_classes([])
 @permission_classes([AllowAny])
 class ChargesByView(APIView):
-    def get(self, request, tollOpID, date_from, date_to):
+    def get(self, request, tollOpID=None, date_from=None, date_to=None):
+        # Έλεγχος αν λείπει κάποια παράμετρος
+        if not tollOpID or not date_from or not date_to:
+            return JsonResponse({
+                "status": "failed",
+                "info": "Missing required path parameters."
+            }, status=400)
         try:
             date_from = datetime.strptime(date_from, "%Y%m%d")
             date_to = datetime.strptime(date_to, "%Y%m%d")
