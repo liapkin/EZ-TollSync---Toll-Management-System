@@ -7,6 +7,16 @@ from rest_framework.views import APIView
 from .models import Operator, Tollstation, Tag, Pass  
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
+from .error_handling import (  
+    SuccessWithDataResponse,
+    SuccessNoContentResponse,
+    FailedDbConnectionResponse,
+    FailedWithReasonResponse,
+    BadRequestResponse,
+    UnauthorizedResponse,
+    InternalServerErrorResponse
+)
+
 
 class HealthCheckView(APIView):
     def get(self, request):
@@ -15,33 +25,24 @@ class HealthCheckView(APIView):
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1")  # Απλό ερώτημα για έλεγχο σύνδεσης
 
-            # Αριθμός εγγραφών στους πίνακες
             n_stations = Tollstation.objects.count()
             n_tags = Tag.objects.count()
             n_passes = Pass.objects.count()
-
-            # Connection string (προσαρμόστε ανάλογα με τη βάση δεδομένων σας)
             db_connection = str(connection.settings_dict)
 
-            # Επιστροφή επιτυχούς απάντησης
-            response_data = {
-                "status": "OK",
-                "dbconnection": db_connection,
-                "n_stations": n_stations,
-                "n_tags": n_tags,
-                "n_passes": n_passes,
-            }
-            return JsonResponse(response_data, status=200)
-
-        except Exception as e:
-            # Επιστροφή αποτυχημένης απάντησης
-            db_connection = str(connection.settings_dict)
-            response_data = {
-                "status": "failed",
-                "dbconnection": db_connection,
-            }
-            return JsonResponse(response_data, status=401)
+            return SuccessWithDataResponse(
+                db_connection,
+                n_stations,
+                n_tags,
+                n_passes
+            ).to_response()
         
+        except Exception as e:
+            return FailedDbConnectionResponse(
+                db_connection
+            ).to_response()
+        
+
 @authentication_classes([])
 @permission_classes([AllowAny])
 class ResetStationsView(APIView):
@@ -53,10 +54,7 @@ class ResetStationsView(APIView):
             with open(file_path, 'r', encoding='utf-8') as file:
                 pass  # Απλός έλεγχος ύπαρξης
         except FileNotFoundError:
-            return JsonResponse({
-                "status": "failed",
-                "info": "File not found"
-            }, status=400)
+            return BadRequestResponse("File not found").to_response()
 
         try:
             with transaction.atomic():  # Ξεκινήστε μια συναλλαγή
@@ -64,7 +62,7 @@ class ResetStationsView(APIView):
                 Tollstation.objects.all().delete()
 
                 # Διαβάστε το CSV αρχείο και εισάγετε τα δεδομένα
-                with open(file_path, 'r',encoding='utf-8') as file:
+                with open(file_path, 'r', encoding='utf-8') as file:
                     reader = csv.DictReader(file)
                     stations = []
 
@@ -72,10 +70,7 @@ class ResetStationsView(APIView):
                         # Βρείτε τον χειριστή (operator) με βάση το όνομα
                         operator = Operator.objects.filter(name=row['Operator']).first()
                         if not operator:
-                            return JsonResponse({
-                                "status": "failed",
-                                "info": f"Operator '{row['Operator']}' not found"
-                            }, status=400)
+                            return BadRequestResponse(f"Operator '{row['Operator']}' not found").to_response()
 
                         # Δημιουργία του αντικειμένου Tollstation
                         stations.append(Tollstation(
@@ -95,35 +90,26 @@ class ResetStationsView(APIView):
                     # Εισαγωγή όλων των σταθμών στη βάση δεδομένων
                     Tollstation.objects.bulk_create(stations)
 
-                return JsonResponse({
-                    "status": "OK"
-                })
+                return SuccessNoContentResponse().to_response()
 
         except Exception as e:
-            return JsonResponse({
-                "status": "failed",
-                "info": str(e)
-            }, status=500)
+            return InternalServerErrorResponse(str(e)).to_response()
+        
 
 @authentication_classes([])
 @permission_classes([AllowAny])    
 class ResetPassesView(APIView):
     def post(self, request):
         try:
-            with transaction.atomic():  # Χρήση transaction για ασφάλεια
-                # Διαγραφή όλων των tags (εξαρτημένοι πίνακες)
+            with transaction.atomic():  
                 Tag.objects.all().delete()
-                
-                # Διαγραφή όλων των passes
-                Pass.objects.all().delete()
-                
-                return JsonResponse({"status": "success", "info": "All passes and dependent data have been reset."})
-        except Exception as e:
-            return JsonResponse({"status": "failed", "info": f"ProtectedError: {str(e)}"}, status=400)
-        except Exception as e:
-            return JsonResponse({"status": "failed", "info": str(e)}, status=500)
-        
+                Pass.objects.all().delete() 
 
+                return SuccessNoContentResponse().to_response()
+        
+        except Exception as e:
+            return InternalServerErrorResponse(str(e)).to_response()
+        
 
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -137,15 +123,9 @@ class AddPassesView(APIView):
                 reader = csv.DictReader(file)  # Διάβασμα του CSV αρχείου
                 rows = list(reader)
         except FileNotFoundError:
-            return JsonResponse({
-                "status": "failed",
-                "info": "File not found"
-            }, status=400)
+            return BadRequestResponse("File not found").to_response()
         except Exception as e:
-            return JsonResponse({
-                "status": "failed",
-                "info": f"Error opening file: {str(e)}"
-            }, status=400)
+            return BadRequestResponse(f"Error opening file: {str(e)}").to_response()
         
         errors = []
         success_count = 0
@@ -155,7 +135,6 @@ class AddPassesView(APIView):
                 for row_num, row in enumerate(rows, start=1):
                     try:
                         # Έλεγχος αν όλα τα απαραίτητα πεδία υπάρχουν στη γραμμή
-                        print("CSV Headers:", reader.fieldnames)
                         if not all(key in row for key in ['tagHomeID', 'tagRef', 'tollID', 'timestamp', 'charge']):
                             errors.append(f"Row {row_num}: Missing required fields.")
                             continue
@@ -211,23 +190,12 @@ class AddPassesView(APIView):
                         errors.append(f"Row {row_num}: {str(e)}")
 
                 if errors:
-                    return JsonResponse({
-                        "status": "partial",
-                        "message": f"Επιτυχία: {success_count}, Σφάλματα: {len(errors)}",
-                        "errors": errors
-                    }, status=207)
+                    return FailedWithReasonResponse(f"Επιτυχία: {success_count}, Σφάλματα: {len(errors)}").to_response(status.HTTP_207_MULTI_STATUS)
                 else:
-                    return JsonResponse({
-                        "status": "success",
-                        "message": f"Προστέθηκαν {success_count} εγγραφές."
-                    }, status=200)
+                    return SuccessNoContentResponse().to_response()
 
         except Exception as e:
-            return JsonResponse({
-                "status": "failed",
-                "info": f"Transaction failed: {str(e)}"
-            }, status=500)
-
+            return InternalServerErrorResponse(f"Transaction failed: {str(e)}").to_response()
 
 
 @authentication_classes([])
