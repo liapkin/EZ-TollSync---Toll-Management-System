@@ -1,62 +1,79 @@
-'use client'
+"use client"
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import api from '@/app/api/axios'
 
 type User = {
-  username: string
-  role: 'operator' | 'admin'
+  email: string
+  name: string
+  role: 'admin' | 'operator'
+  token: string
+  code: string
 } | null
 
 type AuthContextType = {
   user: User
-  login: (username: string, password: string) => boolean
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null)
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      try {
+        const parsed = JSON.parse(storedUser)
+        if (parsed?.code && parsed?.role) {
+          setUser(parsed)
+        }
+      } catch {
+        localStorage.removeItem('user')
+      }
     }
   }, [])
 
-  const login = (username: string, password: string) => {
-    if (username === 'admin' && password === 'password') {
-      const newUser = { username, role: 'admin' }
-      setUser(newUser)
-      localStorage.setItem('user', JSON.stringify(newUser))
+  const login = async (email: string, password: string) => {
+    try {
+      const { data } = await api.post('login/', { email, password })
+
+      const userData = {
+        email: data.email || email,
+        name: data.name,
+        role: data.role.toLowerCase() as 'admin' | 'operator',
+        token: data.token,
+        code: data.code
+      }
+
+      setUser(userData)
+      localStorage.setItem('user', JSON.stringify(userData))
+      localStorage.setItem('authToken', data.token)
       return true
-    } else if (username === 'operator' && password === 'password') {
-      const newUser = { username, role: 'operator' }
-      setUser(newUser)
-      localStorage.setItem('user', JSON.stringify(newUser))
-      return true
+    } catch (error) {
+      console.error('Login failed:', error)
+      return false
     }
-    return false
+
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem('user')
+    localStorage.removeItem('authToken')
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+      <AuthContext.Provider value={{ user, login, logout }}>
+        {children}
+      </AuthContext.Provider>
   )
 }
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider')
   return context
 }
-
