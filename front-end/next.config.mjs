@@ -21,6 +21,8 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  // Add these for Leaflet support
+  transpilePackages: ['react-leaflet', 'leaflet'],
 }
 
 mergeConfig(nextConfig, userConfig)
@@ -32,8 +34,8 @@ function mergeConfig(nextConfig, userConfig) {
 
   for (const key in userConfig) {
     if (
-      typeof nextConfig[key] === 'object' &&
-      !Array.isArray(nextConfig[key])
+        typeof nextConfig[key] === 'object' &&
+        !Array.isArray(nextConfig[key])
     ) {
       nextConfig[key] = {
         ...nextConfig[key],
