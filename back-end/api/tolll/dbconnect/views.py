@@ -377,3 +377,112 @@ class ChargesByView(APIView):
 
         except Exception as e:
             return JsonResponse({"status": "failed", "info": str(e)}, status=500)
+
+@authentication_classes([])
+@permission_classes([AllowAny])
+class TollStationActivityView(APIView):
+    def get(self, request, operator_id=None, date_from=None, date_to=None):
+        try:
+            # Parse dates first
+            try:
+                date_from = timezone.make_aware(
+                    datetime.strptime(unquote(date_from), "%Y-%m-%d %H:%M"),
+                    timezone.get_current_timezone()
+                )
+                date_to = timezone.make_aware(
+                    datetime.strptime(unquote(date_to), "%Y-%m-%d %H:%M"),
+                    timezone.get_current_timezone()
+                )
+            except ValueError as e:
+                return JsonResponse({'error': f'Invalid date format: {str(e)}'}, status=400)
+
+            # Query with annotations for better performance
+            stations = Tollstation.objects.annotate(
+                pass_count=Count('pass', filter=Q(
+                    pass__timestamp__range=[date_from, date_to]
+                )),
+                station_charges=Sum('pass__charge', filter=Q(
+                    pass__timestamp__range=[date_from, date_to]
+                ), default=0)
+            )
+
+            if operator_id and operator_id != 'admin':
+                stations = stations.filter(operator__code=operator_id)
+
+            stations_data = []
+            total_passes = 0
+            total_charges = 0
+
+            for station in stations:
+                total_passes += station.pass_count
+                station_charges = float(station.station_charges or 0)
+                total_charges += station_charges
+
+                stations_data.append({
+                    'tollid': station.tollid,
+                    'name': station.name,
+                    'lat': station.lat,
+                    'long': station.long,
+                    'pass_count': station.pass_count,
+                    'total_charges': station_charges
+                })
+
+            return JsonResponse(stations_data, safe=False)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+class TollOperatorListView(APIView):
+    """
+    Returns a list of operators (with a valid code).
+    Each entry includes the operator code and name.
+    """
+
+    def get(self, request):
+        # Correct filter using is_admin field
+        operators = Operator.objects.filter(is_admin=False)
+        data = [{
+            "code": op.code,
+            "name": op.name
+        } for op in operators]
+        return Response(data)
+
+
+class OperatorLoginView(APIView):
+    """
+    Custom login endpoint for operators.
+    Expects a POST request with JSON:
+      { "email": "<operator_email>", "password": "<operator_password>" }
+    If successful, returns a token, operator ID, name, and role.
+    """
+
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if not email or not password:
+            return Response({"error": "Email and password are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            operator = Operator.objects.get(email=email)
+        except Operator.DoesNotExist:
+            return Response({"error": "Invalid credentials."},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        if not check_password(password, operator.password):
+            return Response({"error": "Invalid credentials."},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        token = f"operator-{operator.id}"
+        # Define role based on the is_admin flag
+        role = "admin" if operator.is_admin else "operator"
+
+        return Response({
+            "token": token,
+            "operator_id": operator.id,
+            "name": operator.name,
+            "role": "admin" if operator.is_admin else "operator",
+            "code": operator.code
+        }, status=status.HTTP_200_OK)
