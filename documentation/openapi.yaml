@@ -70,6 +70,8 @@ paths:
     get:
       summary: Έλεγχος συνδεσιμότητας συστήματος (healthcheck)
       description: Ελέγχει την σύνδεση με τη ΒΔ και επιστρέφει πληροφορίες σχετικά με το σύστημα.
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Επιτυχής σύνδεση με τη ΒΔ.
@@ -108,6 +110,8 @@ paths:
     post:
       summary: Αρχικοποίηση των σταθμών διοδίων
       description: Επαναφέρει τον πίνακα σταθμών διοδίων χρησιμοποιώντας το αρχείο tollstations2024.csv.
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Επιτυχής αρχικοποίηση.
@@ -128,6 +132,8 @@ paths:
     post:
       summary: Αρχικοποίηση των διελεύσεων
       description: Διαγραφή όλων των γεγονότων διέλευσης και επαναφορά των σχετικών πινάκων.
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Επιτυχής επαναφορά.
@@ -148,6 +154,8 @@ paths:
     post:
       summary: Εισαγωγή νέων διελεύσεων
       description: Ενημερώνει τα γεγονότα διέλευσης προσθέτοντας δεδομένα από αρχείο CSV που αποστέλλεται ως multipart/form-data.
+      security:
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -515,3 +523,8 @@ components:
         info:
           type: string
           nullable: true
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
