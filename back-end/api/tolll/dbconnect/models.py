@@ -6,6 +6,7 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
+from django.contrib.auth.hashers import make_password
 
 
 class Operator(models.Model):
@@ -13,6 +14,15 @@ class Operator(models.Model):
     name = models.CharField(max_length=200, blank=True, null=True)
     email = models.CharField(max_length=200, blank=True, null=True)
     code = models.CharField(max_length=50, blank=True, null=True)
+    password = models.CharField(max_length=128, blank=True)
+    is_admin = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        # If the password isn't hashed yet (a simple check, e.g., length or a marker),
+        # you can hash it before saving:
+        if self.password and not self.password.startswith('pbkdf2_'):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name  # Επιστρέφει το πεδίο `name` ως αναπαράσταση του αντικειμένου
