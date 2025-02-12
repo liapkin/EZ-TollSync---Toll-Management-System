@@ -106,6 +106,20 @@ def main():
 
     # Create the API client configuration.
     configuration = openapi_client.Configuration(host="https://localhost:9115/api")
+
+    # For administrative endpoints (i.e. those starting with /admin),
+    # load the sessionid cookie from the admin_cookie file.
+    admin_scopes = ["healthcheck", "resetpasses", "resetstations", "admin"]
+    if args.scope in admin_scopes:
+        try:
+            with open("admin_cookie", "r") as cookie_file:
+                admin_cookie = cookie_file.read().strip()
+            configuration.api_key["cookieAuth"] = admin_cookie
+            configuration.api_key_prefix["cookieAuth"] = "sessionid"
+        except FileNotFoundError:
+            print("Error: admin_cookie file not found. Administrative endpoints require the sessionid cookie.")
+            sys.exit(1)
+
     with openapi_client.ApiClient(configuration) as api_client:
         api_instance = openapi_client.DefaultApi(api_client)
         try:
@@ -126,9 +140,7 @@ def main():
                 print("Login successful. Response:")
                 print(response)
             elif args.scope == "logout":
-                # For logout, we need to send the token in the custom header.
-                # The API client in these examples takes the token as parameter.
-                # In a real client you might want to set a default header:
+                # For logout, send the token in the custom header.
                 api_client.set_default_header("X-OBSERVATORY-AUTH", args.token)
                 api_instance.logout_post(args.token)
                 print("Logout successful.")
@@ -157,13 +169,12 @@ def main():
                 print("Charges by response:")
                 print(response)
             elif args.scope == "admin":
-                # Note: The user management endpoints (usermod and users) are marked as optional
-                # and are not implemented in the sample API. Only addpasses is shown.
+                # Administrative functions
                 if args.usermod:
                     if not args.username or not args.passw:
                         print("Error: For --usermod, you must provide --username and --passw")
                         sys.exit(1)
-                    # In a complete implementation, here you would call an API endpoint for user creation or password change.
+                    # In a complete implementation, call an API endpoint for user creation or password change.
                     print("User modification requested (not implemented in this sample).")
                 elif args.users:
                     print("User list requested (not implemented in this sample).")
