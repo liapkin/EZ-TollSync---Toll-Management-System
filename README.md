@@ -122,4 +122,4 @@ Database dumps and DDL scripts are available in `back-end/database/`.
 **Project**: Ανάπτυξη λογισμικού για τη διαχείριση των οφειλών μεταξύ εταιρειών διαχείρισης σταθμών διοδίων
 
 ## License
-This project was developed as part of Software Engineering course (2024-25).
+This project was developed as part of Software Engineering course @ NTUA (2024-25).
