@@ -91,7 +91,7 @@ function Map({
     setSelectedStation: (station: TollStation | null) => void
 }) {
     const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: "AIzaSyBno7QRXEjM34HKnClItclTWkqrvH11gDM",
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
         libraries: libraries as any,
     })
 
