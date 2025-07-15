@@ -117,7 +117,7 @@ Database dumps and DDL scripts are available in `back-end/database/`.
 - Error handling implemented across all layers
 - Supports CSV data import for passes and toll stations
 
-## Screenshots 
+## Snaps from testing 
 
 <img width="1720" height="1549" alt="actual-map" src="https://github.com/user-attachments/assets/09b7f7cb-5231-46f8-b74c-cf9235426e16" />
 
