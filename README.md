@@ -117,6 +117,15 @@ Database dumps and DDL scripts are available in `back-end/database/`.
 - Error handling implemented across all layers
 - Supports CSV data import for passes and toll stations
 
+## Screenshots 
+
+<img width="1720" height="1549" alt="actual-map" src="https://github.com/user-attachments/assets/09b7f7cb-5231-46f8-b74c-cf9235426e16" />
+
+<img width="1637" height="1733" alt="debt_report" src="https://github.com/user-attachments/assets/864989f5-58a4-4c32-a913-cf12935e9377" />
+
+<img width="1453" height="1688" alt="heatmap" src="https://github.com/user-attachments/assets/a479a92f-3194-44e4-9c9d-012e8f7bc45e" />
+
+
 ## Course Information
 **Course**: Τεχνολογία Λογισμικού 2024-25  
 **Project**: Ανάπτυξη λογισμικού για τη διαχείριση των οφειλών μεταξύ εταιρειών διαχείρισης σταθμών διοδίων
