@@ -30,7 +30,7 @@ softeng24-41/
 ### Frontend
 - **Framework**: Next.js (React)
 - **UI Components**: Radix UI + Tailwind CSS
-- **Mapping**: React Leaflet & Google Maps API
+- **Mapping**: Google Maps API
 - **Charts**: Chart.js & Recharts
 - **HTTP Client**: Axios
 
